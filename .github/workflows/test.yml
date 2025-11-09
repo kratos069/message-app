@@ -1,0 +1,57 @@
+name: Run Unit Tests
+
+# workflow (auto procedure to run one or more jobs) 
+#on ->  triggered when there is a push to main branch
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Test
+    # runner -> runs-on = github hosted runner (runs the job)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: message-app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.25'
+
+    - name: Create app.env file
+      run: |
+        echo "ENVIRONMENT=test" >> app.env
+        echo "DB_SOURCE=postgresql://root:secret@localhost:5432/message-app?sslmode=disable" >> app.env
+        echo "MIGRATION_URL=file://./migration" >> app.env
+        echo "HTTP_SERVER_ADDRESS=0.0.0.0:8080" >> app.env
+
+    - name: Golang Migrate
+      run: |
+        curl -L https://github.com/golang-migrate/migrate/releases/download/v4.18.3/migrate.linux-amd64.tar.gz | tar xvz
+        sudo mv migrate /usr/bin/migrate
+        which migrate
+
+    - name: Run Migrations
+      run: make migrateup
+
+    - name: Test
+      run: make test
