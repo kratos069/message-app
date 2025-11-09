@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS TypingIndicators;
+DROP TABLE IF EXISTS Messages;
+DROP TABLE IF EXISTS ConversationParticipants;
+DROP TABLE IF EXISTS Conversations;
+DROP TABLE IF EXISTS Users;
