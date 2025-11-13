@@ -2,8 +2,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 // ============================================
@@ -13,8 +11,8 @@ import (
 // ============================================
 
 type MarkMessagesAsReadTxParams struct {
-	ConversationID uuid.UUID
-	UserID         uuid.UUID
+	ConversationID int64
+	UserID         int64
 }
 
 // MarkMessagesAsReadTx marks all messages in a conversation as read for a user

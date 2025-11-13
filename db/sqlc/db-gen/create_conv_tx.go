@@ -2,8 +2,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 // ============================================
@@ -11,8 +9,8 @@ import (
 // ============================================
 
 type CreateConversationTxParams struct {
-	User1ID uuid.UUID
-	User2ID uuid.UUID
+	User1ID int64
+	User2ID int64
 }
 
 type CreateConversationTxResult struct {

@@ -50,3 +50,8 @@ WHERE cp1.user_id = $1
   AND cp2.user_id = $2
   AND cp1.user_id != cp2.user_id
 LIMIT 1;
+
+-- name: GetAllConversations :many
+SELECT * FROM "Conversations"
+ORDER BY updated_at DESC
+LIMIT $1 OFFSET $2;

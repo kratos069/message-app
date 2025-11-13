@@ -8,7 +8,6 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -23,8 +22,8 @@ RETURNING conversation_participants_id, conversation_id, user_id, last_read_at, 
 `
 
 type AddParticipantToConversationParams struct {
-	ConversationID uuid.UUID `json:"conversation_id"`
-	UserID         uuid.UUID `json:"user_id"`
+	ConversationID int64 `json:"conversation_id"`
+	UserID         int64 `json:"user_id"`
 }
 
 func (q *Queries) AddParticipantToConversation(ctx context.Context, arg AddParticipantToConversationParams) (ConversationParticipant, error) {
@@ -55,7 +54,7 @@ WHERE cp.conversation_id = $1
 `
 
 type GetConversationParticipantsRow struct {
-	ID                uuid.UUID        `json:"id"`
+	ID                int64            `json:"id"`
 	Username          string           `json:"username"`
 	Email             string           `json:"email"`
 	ProfilePictureUrl pgtype.Text      `json:"profile_picture_url"`
@@ -64,7 +63,7 @@ type GetConversationParticipantsRow struct {
 	JoinedAt          pgtype.Timestamp `json:"joined_at"`
 }
 
-func (q *Queries) GetConversationParticipants(ctx context.Context, conversationID uuid.UUID) ([]GetConversationParticipantsRow, error) {
+func (q *Queries) GetConversationParticipants(ctx context.Context, conversationID int64) ([]GetConversationParticipantsRow, error) {
 	rows, err := q.db.Query(ctx, getConversationParticipants, conversationID)
 	if err != nil {
 		return nil, err
@@ -103,8 +102,8 @@ WHERE cp.conversation_id = $1
 `
 
 type GetUnreadCountParams struct {
-	ConversationID uuid.UUID `json:"conversation_id"`
-	UserID         uuid.UUID `json:"user_id"`
+	ConversationID int64 `json:"conversation_id"`
+	UserID         int64 `json:"user_id"`
 }
 
 func (q *Queries) GetUnreadCount(ctx context.Context, arg GetUnreadCountParams) (int64, error) {
@@ -122,8 +121,8 @@ SELECT EXISTS(
 `
 
 type IsUserInConversationParams struct {
-	ConversationID uuid.UUID `json:"conversation_id"`
-	UserID         uuid.UUID `json:"user_id"`
+	ConversationID int64 `json:"conversation_id"`
+	UserID         int64 `json:"user_id"`
 }
 
 func (q *Queries) IsUserInConversation(ctx context.Context, arg IsUserInConversationParams) (bool, error) {
@@ -139,8 +138,8 @@ WHERE conversation_id = $1 AND user_id = $2
 `
 
 type RemoveParticipantFromConversationParams struct {
-	ConversationID uuid.UUID `json:"conversation_id"`
-	UserID         uuid.UUID `json:"user_id"`
+	ConversationID int64 `json:"conversation_id"`
+	UserID         int64 `json:"user_id"`
 }
 
 func (q *Queries) RemoveParticipantFromConversation(ctx context.Context, arg RemoveParticipantFromConversationParams) error {
@@ -155,8 +154,8 @@ WHERE conversation_id = $1 AND user_id = $2
 `
 
 type UpdateLastReadAtParams struct {
-	ConversationID uuid.UUID `json:"conversation_id"`
-	UserID         uuid.UUID `json:"user_id"`
+	ConversationID int64 `json:"conversation_id"`
+	UserID         int64 `json:"user_id"`
 }
 
 func (q *Queries) UpdateLastReadAt(ctx context.Context, arg UpdateLastReadAtParams) error {

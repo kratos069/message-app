@@ -2,8 +2,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 // ============================================
@@ -12,8 +10,8 @@ import (
 // ============================================
 
 type SendMessageTxParams struct {
-	ConversationID   uuid.UUID
-	SenderID         uuid.UUID
+	ConversationID   int64
+	SenderID         int64
 	EncryptedContent string
 	ClientMessageID  *string
 }

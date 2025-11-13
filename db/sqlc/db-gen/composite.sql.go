@@ -8,7 +8,6 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -49,13 +48,13 @@ SELECT conversations_id FROM conv_to_use
 `
 
 type GetOrCreateDirectConversationParams struct {
-	UserID   uuid.UUID `json:"user_id"`
-	UserID_2 uuid.UUID `json:"user_id_2"`
+	UserID   int64 `json:"user_id"`
+	UserID_2 int64 `json:"user_id_2"`
 }
 
-func (q *Queries) GetOrCreateDirectConversation(ctx context.Context, arg GetOrCreateDirectConversationParams) (uuid.UUID, error) {
+func (q *Queries) GetOrCreateDirectConversation(ctx context.Context, arg GetOrCreateDirectConversationParams) (int64, error) {
 	row := q.db.QueryRow(ctx, getOrCreateDirectConversation, arg.UserID, arg.UserID_2)
-	var conversations_id uuid.UUID
+	var conversations_id int64
 	err := row.Scan(&conversations_id)
 	return conversations_id, err
 }
@@ -104,22 +103,22 @@ LIMIT $2 OFFSET $3
 `
 
 type GetUserConversationsWithLastMessageParams struct {
-	UserID uuid.UUID `json:"user_id"`
-	Limit  int32     `json:"limit"`
-	Offset int32     `json:"offset"`
+	UserID int64 `json:"user_id"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 type GetUserConversationsWithLastMessageRow struct {
-	ConversationsID     uuid.UUID        `json:"conversations_id"`
+	ConversationsID     int64            `json:"conversations_id"`
 	UpdatedAt           pgtype.Timestamp `json:"updated_at"`
-	OtherUserID         uuid.UUID        `json:"other_user_id"`
+	OtherUserID         int64            `json:"other_user_id"`
 	OtherUserUsername   string           `json:"other_user_username"`
 	OtherUserAvatar     pgtype.Text      `json:"other_user_avatar"`
 	OtherUserOnline     pgtype.Bool      `json:"other_user_online"`
 	OtherUserLastSeen   pgtype.Timestamp `json:"other_user_last_seen"`
 	LastMessageContent  string           `json:"last_message_content"`
 	LastMessageTime     pgtype.Timestamp `json:"last_message_time"`
-	LastMessageSenderID uuid.UUID        `json:"last_message_sender_id"`
+	LastMessageSenderID int64            `json:"last_message_sender_id"`
 	UnreadCount         int64            `json:"unread_count"`
 }
 

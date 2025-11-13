@@ -8,7 +8,6 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -25,10 +24,10 @@ RETURNING messages_id, conversation_id, sender_id, encrypted_content, client_mes
 `
 
 type CreateMessageParams struct {
-	ConversationID   uuid.UUID `json:"conversation_id"`
-	SenderID         uuid.UUID `json:"sender_id"`
-	EncryptedContent string    `json:"encrypted_content"`
-	ClientMessageID  string    `json:"client_message_id"`
+	ConversationID   int64  `json:"conversation_id"`
+	SenderID         int64  `json:"sender_id"`
+	EncryptedContent string `json:"encrypted_content"`
+	ClientMessageID  string `json:"client_message_id"`
 }
 
 func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error) {
@@ -55,7 +54,7 @@ DELETE FROM "Messages"
 WHERE messages_id = $1
 `
 
-func (q *Queries) DeleteMessage(ctx context.Context, messagesID uuid.UUID) error {
+func (q *Queries) DeleteMessage(ctx context.Context, messagesID int64) error {
 	_, err := q.db.Exec(ctx, deleteMessage, messagesID)
 	return err
 }
@@ -77,15 +76,15 @@ LIMIT $2 OFFSET $3
 `
 
 type GetConversationMessagesParams struct {
-	ConversationID uuid.UUID `json:"conversation_id"`
-	Limit          int32     `json:"limit"`
-	Offset         int32     `json:"offset"`
+	ConversationID int64 `json:"conversation_id"`
+	Limit          int32 `json:"limit"`
+	Offset         int32 `json:"offset"`
 }
 
 type GetConversationMessagesRow struct {
-	MessagesID       uuid.UUID        `json:"messages_id"`
-	ConversationID   uuid.UUID        `json:"conversation_id"`
-	SenderID         uuid.UUID        `json:"sender_id"`
+	MessagesID       int64            `json:"messages_id"`
+	ConversationID   int64            `json:"conversation_id"`
+	SenderID         int64            `json:"sender_id"`
 	EncryptedContent string           `json:"encrypted_content"`
 	SentAt           pgtype.Timestamp `json:"sent_at"`
 	SenderUsername   string           `json:"sender_username"`
@@ -134,13 +133,13 @@ LIMIT 1
 `
 
 type GetLatestMessageRow struct {
-	MessagesID       uuid.UUID        `json:"messages_id"`
+	MessagesID       int64            `json:"messages_id"`
 	EncryptedContent string           `json:"encrypted_content"`
 	SentAt           pgtype.Timestamp `json:"sent_at"`
 	SenderUsername   string           `json:"sender_username"`
 }
 
-func (q *Queries) GetLatestMessage(ctx context.Context, conversationID uuid.UUID) (GetLatestMessageRow, error) {
+func (q *Queries) GetLatestMessage(ctx context.Context, conversationID int64) (GetLatestMessageRow, error) {
 	row := q.db.QueryRow(ctx, getLatestMessage, conversationID)
 	var i GetLatestMessageRow
 	err := row.Scan(
@@ -182,9 +181,9 @@ WHERE m.messages_id = $1
 `
 
 type GetMessageByIDRow struct {
-	MessagesID       uuid.UUID        `json:"messages_id"`
-	ConversationID   uuid.UUID        `json:"conversation_id"`
-	SenderID         uuid.UUID        `json:"sender_id"`
+	MessagesID       int64            `json:"messages_id"`
+	ConversationID   int64            `json:"conversation_id"`
+	SenderID         int64            `json:"sender_id"`
 	EncryptedContent string           `json:"encrypted_content"`
 	ClientMessageID  string           `json:"client_message_id"`
 	SentAt           pgtype.Timestamp `json:"sent_at"`
@@ -192,7 +191,7 @@ type GetMessageByIDRow struct {
 	SenderAvatar     pgtype.Text      `json:"sender_avatar"`
 }
 
-func (q *Queries) GetMessageByID(ctx context.Context, messagesID uuid.UUID) (GetMessageByIDRow, error) {
+func (q *Queries) GetMessageByID(ctx context.Context, messagesID int64) (GetMessageByIDRow, error) {
 	row := q.db.QueryRow(ctx, getMessageByID, messagesID)
 	var i GetMessageByIDRow
 	err := row.Scan(
@@ -214,7 +213,7 @@ FROM "Messages"
 WHERE conversation_id = $1
 `
 
-func (q *Queries) GetMessageCount(ctx context.Context, conversationID uuid.UUID) (int64, error) {
+func (q *Queries) GetMessageCount(ctx context.Context, conversationID int64) (int64, error) {
 	row := q.db.QueryRow(ctx, getMessageCount, conversationID)
 	var total_messages int64
 	err := row.Scan(&total_messages)
@@ -239,15 +238,15 @@ LIMIT $3
 `
 
 type GetMessagesBeforeParams struct {
-	ConversationID uuid.UUID        `json:"conversation_id"`
+	ConversationID int64            `json:"conversation_id"`
 	SentAt         pgtype.Timestamp `json:"sent_at"`
 	Limit          int32            `json:"limit"`
 }
 
 type GetMessagesBeforeRow struct {
-	MessagesID       uuid.UUID        `json:"messages_id"`
-	ConversationID   uuid.UUID        `json:"conversation_id"`
-	SenderID         uuid.UUID        `json:"sender_id"`
+	MessagesID       int64            `json:"messages_id"`
+	ConversationID   int64            `json:"conversation_id"`
+	SenderID         int64            `json:"sender_id"`
 	EncryptedContent string           `json:"encrypted_content"`
 	SentAt           pgtype.Timestamp `json:"sent_at"`
 	SenderUsername   string           `json:"sender_username"`
@@ -299,14 +298,14 @@ ORDER BY m.sent_at ASC
 `
 
 type GetMessagesSinceParams struct {
-	ConversationID uuid.UUID        `json:"conversation_id"`
+	ConversationID int64            `json:"conversation_id"`
 	SentAt         pgtype.Timestamp `json:"sent_at"`
 }
 
 type GetMessagesSinceRow struct {
-	MessagesID       uuid.UUID        `json:"messages_id"`
-	ConversationID   uuid.UUID        `json:"conversation_id"`
-	SenderID         uuid.UUID        `json:"sender_id"`
+	MessagesID       int64            `json:"messages_id"`
+	ConversationID   int64            `json:"conversation_id"`
+	SenderID         int64            `json:"sender_id"`
 	EncryptedContent string           `json:"encrypted_content"`
 	SentAt           pgtype.Timestamp `json:"sent_at"`
 	SenderUsername   string           `json:"sender_username"`
@@ -358,15 +357,15 @@ LIMIT $3
 `
 
 type SearchMessagesParams struct {
-	ConversationID   uuid.UUID `json:"conversation_id"`
-	EncryptedContent string    `json:"encrypted_content"`
-	Limit            int32     `json:"limit"`
+	ConversationID   int64  `json:"conversation_id"`
+	EncryptedContent string `json:"encrypted_content"`
+	Limit            int32  `json:"limit"`
 }
 
 type SearchMessagesRow struct {
-	MessagesID       uuid.UUID        `json:"messages_id"`
-	ConversationID   uuid.UUID        `json:"conversation_id"`
-	SenderID         uuid.UUID        `json:"sender_id"`
+	MessagesID       int64            `json:"messages_id"`
+	ConversationID   int64            `json:"conversation_id"`
+	SenderID         int64            `json:"sender_id"`
 	EncryptedContent string           `json:"encrypted_content"`
 	SentAt           pgtype.Timestamp `json:"sent_at"`
 	SenderUsername   string           `json:"sender_username"`

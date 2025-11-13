@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/kratos069/message-app/db/sqlc/db-gen"
 	"github.com/kratos069/message-app/util"
@@ -166,7 +165,7 @@ func TestSendMessageTxInvalidConversation(t *testing.T) {
 	ctx := context.Background()
 
 	user1 := createRandomUser(t)
-	invalidConvID := uuid.New()
+	invalidConvID := util.RandomInt(1, 100)
 	clientMsgID := util.RandomClientMessageID()
 
 	// Should fail with invalid conversation ID
@@ -390,7 +389,7 @@ func TestMarkMessagesAsReadTxInvalidConversation(t *testing.T) {
 	ctx := context.Background()
 
 	user := createRandomUser(t)
-	invalidConvID := uuid.New()
+	invalidConvID := util.RandomInt(1, 100)
 
 	// Should not error, but won't update anything
 	err := testStore.MarkMessagesAsReadTx(ctx,
