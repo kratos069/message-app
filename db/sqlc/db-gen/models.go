@@ -5,29 +5,31 @@
 package db
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Conversation struct {
-	ConversationsID uuid.UUID        `json:"conversations_id"`
+	ConversationsID int64            `json:"conversations_id"`
 	CreatedAt       pgtype.Timestamp `json:"created_at"`
 	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
 }
 
 type ConversationParticipant struct {
-	ConversationParticipantsID uuid.UUID `json:"conversation_participants_id"`
-	ConversationID             uuid.UUID `json:"conversation_id"`
-	UserID                     uuid.UUID `json:"user_id"`
+	ConversationParticipantsID int64 `json:"conversation_participants_id"`
+	ConversationID             int64 `json:"conversation_id"`
+	UserID                     int64 `json:"user_id"`
 	// For read receipts
 	LastReadAt pgtype.Timestamp `json:"last_read_at"`
 	JoinedAt   pgtype.Timestamp `json:"joined_at"`
 }
 
 type Message struct {
-	MessagesID     uuid.UUID `json:"messages_id"`
-	ConversationID uuid.UUID `json:"conversation_id"`
-	SenderID       uuid.UUID `json:"sender_id"`
+	MessagesID     int64 `json:"messages_id"`
+	ConversationID int64 `json:"conversation_id"`
+	SenderID       int64 `json:"sender_id"`
 	// E2E encrypted message
 	EncryptedContent string `json:"encrypted_content"`
 	// For idempotency/deduplication
@@ -35,22 +37,35 @@ type Message struct {
 	SentAt          pgtype.Timestamp `json:"sent_at"`
 }
 
+type Session struct {
+	ID           uuid.UUID `json:"id"`
+	Username     string    `json:"username"`
+	RefreshToken string    `json:"refresh_token"`
+	UserAgent    string    `json:"user_agent"`
+	ClientIp     string    `json:"client_ip"`
+	IsBlocked    bool      `json:"is_blocked"`
+	ExpiredAt    time.Time `json:"expired_at"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 type TypingIndicator struct {
-	TypingIndicatorsID uuid.UUID        `json:"typing_indicators_id"`
-	ConversationID     uuid.UUID        `json:"conversation_id"`
-	UserID             uuid.UUID        `json:"user_id"`
+	TypingIndicatorsID int64            `json:"typing_indicators_id"`
+	ConversationID     int64            `json:"conversation_id"`
+	UserID             int64            `json:"user_id"`
 	StartedAt          pgtype.Timestamp `json:"started_at"`
 }
 
 type User struct {
-	ID           uuid.UUID `json:"id"`
-	Username     string    `json:"username"`
-	Email        string    `json:"email"`
-	PasswordHash string    `json:"password_hash"`
-	// For E2E encryption
-	PublicKey         string           `json:"public_key"`
+	ID                int64            `json:"id"`
+	Username          string           `json:"username"`
+	Email             string           `json:"email"`
+	PasswordHash      string           `json:"password_hash"`
 	ProfilePictureUrl pgtype.Text      `json:"profile_picture_url"`
 	IsOnline          pgtype.Bool      `json:"is_online"`
 	LastSeenAt        pgtype.Timestamp `json:"last_seen_at"`
+	Role              string           `json:"role"`
 	CreatedAt         pgtype.Timestamp `json:"created_at"`
+	IsBanned          pgtype.Bool      `json:"is_banned"`
+	BannedAt          pgtype.Timestamp `json:"banned_at"`
+	BannedReason      pgtype.Text      `json:"banned_reason"`
 }

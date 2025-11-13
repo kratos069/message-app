@@ -12,28 +12,34 @@ import (
 
 type Querier interface {
 	AddParticipantToConversation(ctx context.Context, arg AddParticipantToConversationParams) (ConversationParticipant, error)
+	BanUser(ctx context.Context, arg BanUserParams) error
+	BlockUserSessions(ctx context.Context, username string) error
 	CleanupStaleTypingIndicators(ctx context.Context) error
 	CreateConversation(ctx context.Context) (Conversation, error)
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
-	DeleteMessage(ctx context.Context, messagesID uuid.UUID) error
-	FindDirectConversation(ctx context.Context, arg FindDirectConversationParams) (uuid.UUID, error)
-	GetConversationByID(ctx context.Context, conversationsID uuid.UUID) (Conversation, error)
+	DeleteMessage(ctx context.Context, messagesID int64) error
+	FindDirectConversation(ctx context.Context, arg FindDirectConversationParams) (int64, error)
+	GetAllConversations(ctx context.Context, arg GetAllConversationsParams) ([]Conversation, error)
+	GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]User, error)
+	GetConversationByID(ctx context.Context, conversationsID int64) (Conversation, error)
 	GetConversationMessages(ctx context.Context, arg GetConversationMessagesParams) ([]GetConversationMessagesRow, error)
-	GetConversationParticipants(ctx context.Context, conversationID uuid.UUID) ([]GetConversationParticipantsRow, error)
-	GetConversationWithParticipants(ctx context.Context, conversationsID uuid.UUID) ([]GetConversationWithParticipantsRow, error)
-	GetLatestMessage(ctx context.Context, conversationID uuid.UUID) (GetLatestMessageRow, error)
+	GetConversationParticipants(ctx context.Context, conversationID int64) ([]GetConversationParticipantsRow, error)
+	GetConversationWithParticipants(ctx context.Context, conversationsID int64) ([]GetConversationWithParticipantsRow, error)
+	GetLatestMessage(ctx context.Context, conversationID int64) (GetLatestMessageRow, error)
 	GetMessageByClientID(ctx context.Context, clientMessageID string) (Message, error)
-	GetMessageByID(ctx context.Context, messagesID uuid.UUID) (GetMessageByIDRow, error)
-	GetMessageCount(ctx context.Context, conversationID uuid.UUID) (int64, error)
+	GetMessageByID(ctx context.Context, messagesID int64) (GetMessageByIDRow, error)
+	GetMessageCount(ctx context.Context, conversationID int64) (int64, error)
 	GetMessagesBefore(ctx context.Context, arg GetMessagesBeforeParams) ([]GetMessagesBeforeRow, error)
 	GetMessagesSince(ctx context.Context, arg GetMessagesSinceParams) ([]GetMessagesSinceRow, error)
 	GetOnlineUsers(ctx context.Context) ([]GetOnlineUsersRow, error)
-	GetOrCreateDirectConversation(ctx context.Context, arg GetOrCreateDirectConversationParams) (uuid.UUID, error)
-	GetTypingUsers(ctx context.Context, conversationID uuid.UUID) ([]GetTypingUsersRow, error)
+	GetOrCreateDirectConversation(ctx context.Context, arg GetOrCreateDirectConversationParams) (int64, error)
+	GetSessionByID(ctx context.Context, id uuid.UUID) (Session, error)
+	GetTypingUsers(ctx context.Context, conversationID int64) ([]GetTypingUsersRow, error)
 	GetUnreadCount(ctx context.Context, arg GetUnreadCountParams) (int64, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
-	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetUserConversations(ctx context.Context, arg GetUserConversationsParams) ([]GetUserConversationsRow, error)
 	GetUserConversationsWithLastMessage(ctx context.Context, arg GetUserConversationsWithLastMessageParams) ([]GetUserConversationsWithLastMessageRow, error)
@@ -43,7 +49,8 @@ type Querier interface {
 	SearchMessages(ctx context.Context, arg SearchMessagesParams) ([]SearchMessagesRow, error)
 	SearchUsersByUsername(ctx context.Context, arg SearchUsersByUsernameParams) ([]SearchUsersByUsernameRow, error)
 	SetTypingIndicator(ctx context.Context, arg SetTypingIndicatorParams) (TypingIndicator, error)
-	UpdateConversationTimestamp(ctx context.Context, conversationsID uuid.UUID) error
+	UnbanUser(ctx context.Context, id int64) error
+	UpdateConversationTimestamp(ctx context.Context, conversationsID int64) error
 	UpdateLastReadAt(ctx context.Context, arg UpdateLastReadAtParams) error
 	UpdateUserOnlineStatus(ctx context.Context, arg UpdateUserOnlineStatusParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error

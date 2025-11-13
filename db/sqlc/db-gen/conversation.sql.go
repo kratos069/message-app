@@ -8,7 +8,6 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -36,15 +35,46 @@ LIMIT 1
 `
 
 type FindDirectConversationParams struct {
-	UserID   uuid.UUID `json:"user_id"`
-	UserID_2 uuid.UUID `json:"user_id_2"`
+	UserID   int64 `json:"user_id"`
+	UserID_2 int64 `json:"user_id_2"`
 }
 
-func (q *Queries) FindDirectConversation(ctx context.Context, arg FindDirectConversationParams) (uuid.UUID, error) {
+func (q *Queries) FindDirectConversation(ctx context.Context, arg FindDirectConversationParams) (int64, error) {
 	row := q.db.QueryRow(ctx, findDirectConversation, arg.UserID, arg.UserID_2)
-	var conversation_id uuid.UUID
+	var conversation_id int64
 	err := row.Scan(&conversation_id)
 	return conversation_id, err
+}
+
+const getAllConversations = `-- name: GetAllConversations :many
+SELECT conversations_id, created_at, updated_at FROM "Conversations"
+ORDER BY updated_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type GetAllConversationsParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) GetAllConversations(ctx context.Context, arg GetAllConversationsParams) ([]Conversation, error) {
+	rows, err := q.db.Query(ctx, getAllConversations, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Conversation{}
+	for rows.Next() {
+		var i Conversation
+		if err := rows.Scan(&i.ConversationsID, &i.CreatedAt, &i.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getConversationByID = `-- name: GetConversationByID :one
@@ -52,7 +82,7 @@ SELECT conversations_id, created_at, updated_at FROM "Conversations"
 WHERE conversations_id = $1
 `
 
-func (q *Queries) GetConversationByID(ctx context.Context, conversationsID uuid.UUID) (Conversation, error) {
+func (q *Queries) GetConversationByID(ctx context.Context, conversationsID int64) (Conversation, error) {
 	row := q.db.QueryRow(ctx, getConversationByID, conversationsID)
 	var i Conversation
 	err := row.Scan(&i.ConversationsID, &i.CreatedAt, &i.UpdatedAt)
@@ -77,10 +107,10 @@ WHERE c.conversations_id = $1
 `
 
 type GetConversationWithParticipantsRow struct {
-	ConversationsID     uuid.UUID        `json:"conversations_id"`
+	ConversationsID     int64            `json:"conversations_id"`
 	CreatedAt           pgtype.Timestamp `json:"created_at"`
 	UpdatedAt           pgtype.Timestamp `json:"updated_at"`
-	ParticipantID       uuid.UUID        `json:"participant_id"`
+	ParticipantID       int64            `json:"participant_id"`
 	ParticipantUsername string           `json:"participant_username"`
 	ParticipantAvatar   pgtype.Text      `json:"participant_avatar"`
 	ParticipantOnline   pgtype.Bool      `json:"participant_online"`
@@ -88,7 +118,7 @@ type GetConversationWithParticipantsRow struct {
 	JoinedAt            pgtype.Timestamp `json:"joined_at"`
 }
 
-func (q *Queries) GetConversationWithParticipants(ctx context.Context, conversationsID uuid.UUID) ([]GetConversationWithParticipantsRow, error) {
+func (q *Queries) GetConversationWithParticipants(ctx context.Context, conversationsID int64) ([]GetConversationWithParticipantsRow, error) {
 	rows, err := q.db.Query(ctx, getConversationWithParticipants, conversationsID)
 	if err != nil {
 		return nil, err
@@ -134,13 +164,13 @@ LIMIT $2 OFFSET $3
 `
 
 type GetUserConversationsParams struct {
-	UserID uuid.UUID `json:"user_id"`
-	Limit  int32     `json:"limit"`
-	Offset int32     `json:"offset"`
+	UserID int64 `json:"user_id"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 type GetUserConversationsRow struct {
-	ConversationsID uuid.UUID        `json:"conversations_id"`
+	ConversationsID int64            `json:"conversations_id"`
 	CreatedAt       pgtype.Timestamp `json:"created_at"`
 	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
 	UnreadCount     int64            `json:"unread_count"`
@@ -177,7 +207,7 @@ SET updated_at = now()
 WHERE conversations_id = $1
 `
 
-func (q *Queries) UpdateConversationTimestamp(ctx context.Context, conversationsID uuid.UUID) error {
+func (q *Queries) UpdateConversationTimestamp(ctx context.Context, conversationsID int64) error {
 	_, err := q.db.Exec(ctx, updateConversationTimestamp, conversationsID)
 	return err
 }

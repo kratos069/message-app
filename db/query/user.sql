@@ -3,10 +3,9 @@ INSERT INTO "Users" (
   username,
   email,
   password_hash,
-  public_key,
   profile_picture_url
 ) VALUES (
-  $1, $2, $3, $4, $5
+  $1, $2, $3, $4
 )
 RETURNING *;
 
@@ -45,3 +44,23 @@ SELECT id, username, email, profile_picture_url, is_online
 FROM "Users"
 WHERE username ILIKE $1
 LIMIT $2;
+
+-- name: GetAllUsers :many
+SELECT * FROM "Users" 
+WHERE deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: BanUser :exec
+UPDATE "Users"
+SET is_banned = true,
+    banned_at = now(),
+    banned_reason = $2
+WHERE id = $1;
+
+-- name: UnbanUser :exec
+UPDATE "Users"
+SET is_banned = false,
+    banned_at = NULL,
+    banned_reason = NULL
+WHERE id = $1;

@@ -8,28 +8,43 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const banUser = `-- name: BanUser :exec
+UPDATE "Users"
+SET is_banned = true,
+    banned_at = now(),
+    banned_reason = $2
+WHERE id = $1
+`
+
+type BanUserParams struct {
+	ID           int64       `json:"id"`
+	BannedReason pgtype.Text `json:"banned_reason"`
+}
+
+func (q *Queries) BanUser(ctx context.Context, arg BanUserParams) error {
+	_, err := q.db.Exec(ctx, banUser, arg.ID, arg.BannedReason)
+	return err
+}
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO "Users" (
   username,
   email,
   password_hash,
-  public_key,
   profile_picture_url
 ) VALUES (
-  $1, $2, $3, $4, $5
+  $1, $2, $3, $4
 )
-RETURNING id, username, email, password_hash, public_key, profile_picture_url, is_online, last_seen_at, created_at
+RETURNING id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, created_at, is_banned, banned_at, banned_reason
 `
 
 type CreateUserParams struct {
 	Username          string      `json:"username"`
 	Email             string      `json:"email"`
 	PasswordHash      string      `json:"password_hash"`
-	PublicKey         string      `json:"public_key"`
 	ProfilePictureUrl pgtype.Text `json:"profile_picture_url"`
 }
 
@@ -38,7 +53,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Username,
 		arg.Email,
 		arg.PasswordHash,
-		arg.PublicKey,
 		arg.ProfilePictureUrl,
 	)
 	var i User
@@ -47,13 +61,61 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Username,
 		&i.Email,
 		&i.PasswordHash,
-		&i.PublicKey,
 		&i.ProfilePictureUrl,
 		&i.IsOnline,
 		&i.LastSeenAt,
+		&i.Role,
 		&i.CreatedAt,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BannedReason,
 	)
 	return i, err
+}
+
+const getAllUsers = `-- name: GetAllUsers :many
+SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, created_at, is_banned, banned_at, banned_reason FROM "Users" 
+WHERE deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type GetAllUsersParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]User, error) {
+	rows, err := q.db.Query(ctx, getAllUsers, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.PasswordHash,
+			&i.ProfilePictureUrl,
+			&i.IsOnline,
+			&i.LastSeenAt,
+			&i.Role,
+			&i.CreatedAt,
+			&i.IsBanned,
+			&i.BannedAt,
+			&i.BannedReason,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getOnlineUsers = `-- name: GetOnlineUsers :many
@@ -64,7 +126,7 @@ ORDER BY last_seen_at DESC
 `
 
 type GetOnlineUsersRow struct {
-	ID                uuid.UUID        `json:"id"`
+	ID                int64            `json:"id"`
 	Username          string           `json:"username"`
 	ProfilePictureUrl pgtype.Text      `json:"profile_picture_url"`
 	LastSeenAt        pgtype.Timestamp `json:"last_seen_at"`
@@ -96,7 +158,7 @@ func (q *Queries) GetOnlineUsers(ctx context.Context) ([]GetOnlineUsersRow, erro
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, password_hash, public_key, profile_picture_url, is_online, last_seen_at, created_at FROM "Users"
+SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, created_at, is_banned, banned_at, banned_reason FROM "Users"
 WHERE email = $1
 `
 
@@ -108,21 +170,24 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Username,
 		&i.Email,
 		&i.PasswordHash,
-		&i.PublicKey,
 		&i.ProfilePictureUrl,
 		&i.IsOnline,
 		&i.LastSeenAt,
+		&i.Role,
 		&i.CreatedAt,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BannedReason,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, password_hash, public_key, profile_picture_url, is_online, last_seen_at, created_at FROM "Users"
+SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, created_at, is_banned, banned_at, banned_reason FROM "Users"
 WHERE id = $1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
 	var i User
 	err := row.Scan(
@@ -130,17 +195,20 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Username,
 		&i.Email,
 		&i.PasswordHash,
-		&i.PublicKey,
 		&i.ProfilePictureUrl,
 		&i.IsOnline,
 		&i.LastSeenAt,
+		&i.Role,
 		&i.CreatedAt,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BannedReason,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, password_hash, public_key, profile_picture_url, is_online, last_seen_at, created_at FROM "Users"
+SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, created_at, is_banned, banned_at, banned_reason FROM "Users"
 WHERE username = $1
 `
 
@@ -152,11 +220,14 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.Username,
 		&i.Email,
 		&i.PasswordHash,
-		&i.PublicKey,
 		&i.ProfilePictureUrl,
 		&i.IsOnline,
 		&i.LastSeenAt,
+		&i.Role,
 		&i.CreatedAt,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BannedReason,
 	)
 	return i, err
 }
@@ -174,7 +245,7 @@ type SearchUsersByUsernameParams struct {
 }
 
 type SearchUsersByUsernameRow struct {
-	ID                uuid.UUID   `json:"id"`
+	ID                int64       `json:"id"`
 	Username          string      `json:"username"`
 	Email             string      `json:"email"`
 	ProfilePictureUrl pgtype.Text `json:"profile_picture_url"`
@@ -207,6 +278,19 @@ func (q *Queries) SearchUsersByUsername(ctx context.Context, arg SearchUsersByUs
 	return items, nil
 }
 
+const unbanUser = `-- name: UnbanUser :exec
+UPDATE "Users"
+SET is_banned = false,
+    banned_at = NULL,
+    banned_reason = NULL
+WHERE id = $1
+`
+
+func (q *Queries) UnbanUser(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, unbanUser, id)
+	return err
+}
+
 const updateUserOnlineStatus = `-- name: UpdateUserOnlineStatus :exec
 UPDATE "Users"
 SET is_online = $2,
@@ -215,7 +299,7 @@ WHERE id = $1
 `
 
 type UpdateUserOnlineStatusParams struct {
-	ID       uuid.UUID   `json:"id"`
+	ID       int64       `json:"id"`
 	IsOnline pgtype.Bool `json:"is_online"`
 }
 
@@ -232,7 +316,7 @@ WHERE id = $1
 `
 
 type UpdateUserProfileParams struct {
-	ID                uuid.UUID   `json:"id"`
+	ID                int64       `json:"id"`
 	ProfilePictureUrl pgtype.Text `json:"profile_picture_url"`
 	Username          string      `json:"username"`
 }
