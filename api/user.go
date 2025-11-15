@@ -20,12 +20,14 @@ type RegisterRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=50,alphanum"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
+	Role     string `json:"role"`
 }
 
 type userResponse struct {
 	UserID    int64     `json:"user_id"`
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
+	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -56,6 +58,7 @@ func (server *Server) register(ctx *gin.Context) {
 		Username:     req.Username,
 		Email:        req.Email,
 		PasswordHash: string(hashedPassword),
+		Role:         req.Role,
 	})
 
 	if err != nil {

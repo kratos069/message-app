@@ -3,9 +3,10 @@ INSERT INTO "Users" (
   username,
   email,
   password_hash,
+  role,
   profile_picture_url
 ) VALUES (
-  $1, $2, $3, $4
+  $1, $2, $3, $4, $5
 )
 RETURNING *;
 
@@ -47,7 +48,6 @@ LIMIT $2;
 
 -- name: GetAllUsers :many
 SELECT * FROM "Users" 
-WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
 

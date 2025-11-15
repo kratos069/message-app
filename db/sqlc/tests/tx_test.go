@@ -165,7 +165,7 @@ func TestSendMessageTxInvalidConversation(t *testing.T) {
 	ctx := context.Background()
 
 	user1 := createRandomUser(t)
-	invalidConvID := util.RandomInt(1, 100)
+	invalidConvID := util.RandomInt(1, 1000)
 	clientMsgID := util.RandomClientMessageID()
 
 	// Should fail with invalid conversation ID
