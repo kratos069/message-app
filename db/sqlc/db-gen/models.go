@@ -64,8 +64,8 @@ type User struct {
 	IsOnline          pgtype.Bool      `json:"is_online"`
 	LastSeenAt        pgtype.Timestamp `json:"last_seen_at"`
 	Role              string           `json:"role"`
-	CreatedAt         pgtype.Timestamp `json:"created_at"`
 	IsBanned          pgtype.Bool      `json:"is_banned"`
 	BannedAt          pgtype.Timestamp `json:"banned_at"`
 	BannedReason      pgtype.Text      `json:"banned_reason"`
+	CreatedAt         pgtype.Timestamp `json:"created_at"`
 }

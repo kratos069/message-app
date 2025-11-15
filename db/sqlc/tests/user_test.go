@@ -18,6 +18,7 @@ func createRandomUser(t *testing.T) db.User {
 		Username:     util.RandomUsername(),
 		PasswordHash: hashedPassword,
 		Email:        util.RandomEmail(),
+		Role:         util.CustomerRole,
 	}
 
 	user, err := testStore.CreateUser(context.Background(), arg)
@@ -27,6 +28,7 @@ func createRandomUser(t *testing.T) db.User {
 	require.Equal(t, arg.Username, user.Username)
 	require.Equal(t, arg.PasswordHash, user.PasswordHash)
 	require.Equal(t, arg.Email, user.Email)
+	require.Equal(t, arg.Role, user.Role)
 	require.NotZero(t, user.CreatedAt)
 
 	return user

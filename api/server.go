@@ -71,9 +71,13 @@ func (server *Server) setupRoutes() {
 	authRoutes.POST("/messages/:id", server.sendMessage)
 
 	// for only admins
-	// adminRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker,
-	// 	[]string{util.AdminRole}))
-	// adminRoutes.POST("/products", server.createProduct)
+	adminRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker,
+		[]string{util.AdminRole}))
+	adminRoutes.GET("/admin", server.listUsers)
+	adminRoutes.GET("/admin/:user_id", server.getUser)
+	adminRoutes.POST("/admin/ban/:user_id", server.banUser)
+	adminRoutes.POST("/admin/unban/:user_id", server.unbanUser)
+	adminRoutes.GET("/admin/stats", server.getStats)
 
 	server.router = router
 

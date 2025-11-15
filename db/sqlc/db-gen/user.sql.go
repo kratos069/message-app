@@ -34,17 +34,19 @@ INSERT INTO "Users" (
   username,
   email,
   password_hash,
+  role,
   profile_picture_url
 ) VALUES (
-  $1, $2, $3, $4
+  $1, $2, $3, $4, $5
 )
-RETURNING id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, created_at, is_banned, banned_at, banned_reason
+RETURNING id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at
 `
 
 type CreateUserParams struct {
 	Username          string      `json:"username"`
 	Email             string      `json:"email"`
 	PasswordHash      string      `json:"password_hash"`
+	Role              string      `json:"role"`
 	ProfilePictureUrl pgtype.Text `json:"profile_picture_url"`
 }
 
@@ -53,6 +55,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Username,
 		arg.Email,
 		arg.PasswordHash,
+		arg.Role,
 		arg.ProfilePictureUrl,
 	)
 	var i User
@@ -65,17 +68,16 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.IsOnline,
 		&i.LastSeenAt,
 		&i.Role,
-		&i.CreatedAt,
 		&i.IsBanned,
 		&i.BannedAt,
 		&i.BannedReason,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, created_at, is_banned, banned_at, banned_reason FROM "Users" 
-WHERE deleted_at IS NULL
+SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users" 
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -103,10 +105,10 @@ func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]Use
 			&i.IsOnline,
 			&i.LastSeenAt,
 			&i.Role,
-			&i.CreatedAt,
 			&i.IsBanned,
 			&i.BannedAt,
 			&i.BannedReason,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -158,7 +160,7 @@ func (q *Queries) GetOnlineUsers(ctx context.Context) ([]GetOnlineUsersRow, erro
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, created_at, is_banned, banned_at, banned_reason FROM "Users"
+SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users"
 WHERE email = $1
 `
 
@@ -174,16 +176,16 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.IsOnline,
 		&i.LastSeenAt,
 		&i.Role,
-		&i.CreatedAt,
 		&i.IsBanned,
 		&i.BannedAt,
 		&i.BannedReason,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, created_at, is_banned, banned_at, banned_reason FROM "Users"
+SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users"
 WHERE id = $1
 `
 
@@ -199,16 +201,16 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.IsOnline,
 		&i.LastSeenAt,
 		&i.Role,
-		&i.CreatedAt,
 		&i.IsBanned,
 		&i.BannedAt,
 		&i.BannedReason,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, created_at, is_banned, banned_at, banned_reason FROM "Users"
+SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users"
 WHERE username = $1
 `
 
@@ -224,10 +226,10 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.IsOnline,
 		&i.LastSeenAt,
 		&i.Role,
-		&i.CreatedAt,
 		&i.IsBanned,
 		&i.BannedAt,
 		&i.BannedReason,
+		&i.CreatedAt,
 	)
 	return i, err
 }
