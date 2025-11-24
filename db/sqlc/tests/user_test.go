@@ -49,7 +49,7 @@ func TestGetUserByEmail(t *testing.T) {
 	require.Equal(t, user1.Username, user2.Username)
 	require.Equal(t, user1.Email, user2.Email)
 	require.Equal(t, user1.PasswordHash, user2.PasswordHash)
-	require.WithinDuration(t, user1.CreatedAt.Time, user2.CreatedAt.Time, time.Second)
+	require.WithinDuration(t, user1.CreatedAt, user2.CreatedAt, time.Second)
 }
 
 func TestGetUserByID(t *testing.T) {
@@ -63,5 +63,5 @@ func TestGetUserByID(t *testing.T) {
 	require.Equal(t, user1.Username, user2.Username)
 	require.Equal(t, user1.Email, user2.Email)
 	require.Equal(t, user1.PasswordHash, user2.PasswordHash)
-	require.WithinDuration(t, user1.CreatedAt.Time, user2.CreatedAt.Time, time.Second)
+	require.WithinDuration(t, user1.CreatedAt, user2.CreatedAt, time.Second)
 }

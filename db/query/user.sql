@@ -64,3 +64,13 @@ SET is_banned = false,
     banned_at = NULL,
     banned_reason = NULL
 WHERE id = $1;
+
+-- name: UpdateUser :one
+UPDATE "Users"
+SET
+password_hash = COALESCE(sqlc.narg(password_hash), password_hash),
+email = COALESCE(sqlc.narg(email), email),
+is_email_verified = COALESCE(sqlc.narg(is_email_verified), is_email_verified)
+WHERE
+username = sqlc.arg(username)
+RETURNING *;

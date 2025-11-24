@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -82,13 +83,13 @@ type GetConversationMessagesParams struct {
 }
 
 type GetConversationMessagesRow struct {
-	MessagesID       int64            `json:"messages_id"`
-	ConversationID   int64            `json:"conversation_id"`
-	SenderID         int64            `json:"sender_id"`
-	EncryptedContent string           `json:"encrypted_content"`
-	SentAt           pgtype.Timestamp `json:"sent_at"`
-	SenderUsername   string           `json:"sender_username"`
-	SenderAvatar     pgtype.Text      `json:"sender_avatar"`
+	MessagesID       int64       `json:"messages_id"`
+	ConversationID   int64       `json:"conversation_id"`
+	SenderID         int64       `json:"sender_id"`
+	EncryptedContent string      `json:"encrypted_content"`
+	SentAt           time.Time   `json:"sent_at"`
+	SenderUsername   string      `json:"sender_username"`
+	SenderAvatar     pgtype.Text `json:"sender_avatar"`
 }
 
 func (q *Queries) GetConversationMessages(ctx context.Context, arg GetConversationMessagesParams) ([]GetConversationMessagesRow, error) {
@@ -133,10 +134,10 @@ LIMIT 1
 `
 
 type GetLatestMessageRow struct {
-	MessagesID       int64            `json:"messages_id"`
-	EncryptedContent string           `json:"encrypted_content"`
-	SentAt           pgtype.Timestamp `json:"sent_at"`
-	SenderUsername   string           `json:"sender_username"`
+	MessagesID       int64     `json:"messages_id"`
+	EncryptedContent string    `json:"encrypted_content"`
+	SentAt           time.Time `json:"sent_at"`
+	SenderUsername   string    `json:"sender_username"`
 }
 
 func (q *Queries) GetLatestMessage(ctx context.Context, conversationID int64) (GetLatestMessageRow, error) {
@@ -181,14 +182,14 @@ WHERE m.messages_id = $1
 `
 
 type GetMessageByIDRow struct {
-	MessagesID       int64            `json:"messages_id"`
-	ConversationID   int64            `json:"conversation_id"`
-	SenderID         int64            `json:"sender_id"`
-	EncryptedContent string           `json:"encrypted_content"`
-	ClientMessageID  string           `json:"client_message_id"`
-	SentAt           pgtype.Timestamp `json:"sent_at"`
-	SenderUsername   string           `json:"sender_username"`
-	SenderAvatar     pgtype.Text      `json:"sender_avatar"`
+	MessagesID       int64       `json:"messages_id"`
+	ConversationID   int64       `json:"conversation_id"`
+	SenderID         int64       `json:"sender_id"`
+	EncryptedContent string      `json:"encrypted_content"`
+	ClientMessageID  string      `json:"client_message_id"`
+	SentAt           time.Time   `json:"sent_at"`
+	SenderUsername   string      `json:"sender_username"`
+	SenderAvatar     pgtype.Text `json:"sender_avatar"`
 }
 
 func (q *Queries) GetMessageByID(ctx context.Context, messagesID int64) (GetMessageByIDRow, error) {
@@ -238,19 +239,19 @@ LIMIT $3
 `
 
 type GetMessagesBeforeParams struct {
-	ConversationID int64            `json:"conversation_id"`
-	SentAt         pgtype.Timestamp `json:"sent_at"`
-	Limit          int32            `json:"limit"`
+	ConversationID int64     `json:"conversation_id"`
+	SentAt         time.Time `json:"sent_at"`
+	Limit          int32     `json:"limit"`
 }
 
 type GetMessagesBeforeRow struct {
-	MessagesID       int64            `json:"messages_id"`
-	ConversationID   int64            `json:"conversation_id"`
-	SenderID         int64            `json:"sender_id"`
-	EncryptedContent string           `json:"encrypted_content"`
-	SentAt           pgtype.Timestamp `json:"sent_at"`
-	SenderUsername   string           `json:"sender_username"`
-	SenderAvatar     pgtype.Text      `json:"sender_avatar"`
+	MessagesID       int64       `json:"messages_id"`
+	ConversationID   int64       `json:"conversation_id"`
+	SenderID         int64       `json:"sender_id"`
+	EncryptedContent string      `json:"encrypted_content"`
+	SentAt           time.Time   `json:"sent_at"`
+	SenderUsername   string      `json:"sender_username"`
+	SenderAvatar     pgtype.Text `json:"sender_avatar"`
 }
 
 func (q *Queries) GetMessagesBefore(ctx context.Context, arg GetMessagesBeforeParams) ([]GetMessagesBeforeRow, error) {
@@ -298,18 +299,18 @@ ORDER BY m.sent_at ASC
 `
 
 type GetMessagesSinceParams struct {
-	ConversationID int64            `json:"conversation_id"`
-	SentAt         pgtype.Timestamp `json:"sent_at"`
+	ConversationID int64     `json:"conversation_id"`
+	SentAt         time.Time `json:"sent_at"`
 }
 
 type GetMessagesSinceRow struct {
-	MessagesID       int64            `json:"messages_id"`
-	ConversationID   int64            `json:"conversation_id"`
-	SenderID         int64            `json:"sender_id"`
-	EncryptedContent string           `json:"encrypted_content"`
-	SentAt           pgtype.Timestamp `json:"sent_at"`
-	SenderUsername   string           `json:"sender_username"`
-	SenderAvatar     pgtype.Text      `json:"sender_avatar"`
+	MessagesID       int64       `json:"messages_id"`
+	ConversationID   int64       `json:"conversation_id"`
+	SenderID         int64       `json:"sender_id"`
+	EncryptedContent string      `json:"encrypted_content"`
+	SentAt           time.Time   `json:"sent_at"`
+	SenderUsername   string      `json:"sender_username"`
+	SenderAvatar     pgtype.Text `json:"sender_avatar"`
 }
 
 func (q *Queries) GetMessagesSince(ctx context.Context, arg GetMessagesSinceParams) ([]GetMessagesSinceRow, error) {
@@ -363,12 +364,12 @@ type SearchMessagesParams struct {
 }
 
 type SearchMessagesRow struct {
-	MessagesID       int64            `json:"messages_id"`
-	ConversationID   int64            `json:"conversation_id"`
-	SenderID         int64            `json:"sender_id"`
-	EncryptedContent string           `json:"encrypted_content"`
-	SentAt           pgtype.Timestamp `json:"sent_at"`
-	SenderUsername   string           `json:"sender_username"`
+	MessagesID       int64     `json:"messages_id"`
+	ConversationID   int64     `json:"conversation_id"`
+	SenderID         int64     `json:"sender_id"`
+	EncryptedContent string    `json:"encrypted_content"`
+	SentAt           time.Time `json:"sent_at"`
+	SenderUsername   string    `json:"sender_username"`
 }
 
 func (q *Queries) SearchMessages(ctx context.Context, arg SearchMessagesParams) ([]SearchMessagesRow, error) {

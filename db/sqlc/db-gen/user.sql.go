@@ -39,7 +39,7 @@ INSERT INTO "Users" (
 ) VALUES (
   $1, $2, $3, $4, $5
 )
-RETURNING id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at
+RETURNING id, username, email, is_email_verified, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at
 `
 
 type CreateUserParams struct {
@@ -63,6 +63,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.IsEmailVerified,
 		&i.PasswordHash,
 		&i.ProfilePictureUrl,
 		&i.IsOnline,
@@ -77,7 +78,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users" 
+SELECT id, username, email, is_email_verified, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users" 
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -100,6 +101,7 @@ func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]Use
 			&i.ID,
 			&i.Username,
 			&i.Email,
+			&i.IsEmailVerified,
 			&i.PasswordHash,
 			&i.ProfilePictureUrl,
 			&i.IsOnline,
@@ -128,10 +130,10 @@ ORDER BY last_seen_at DESC
 `
 
 type GetOnlineUsersRow struct {
-	ID                int64            `json:"id"`
-	Username          string           `json:"username"`
-	ProfilePictureUrl pgtype.Text      `json:"profile_picture_url"`
-	LastSeenAt        pgtype.Timestamp `json:"last_seen_at"`
+	ID                int64              `json:"id"`
+	Username          string             `json:"username"`
+	ProfilePictureUrl pgtype.Text        `json:"profile_picture_url"`
+	LastSeenAt        pgtype.Timestamptz `json:"last_seen_at"`
 }
 
 func (q *Queries) GetOnlineUsers(ctx context.Context) ([]GetOnlineUsersRow, error) {
@@ -160,7 +162,7 @@ func (q *Queries) GetOnlineUsers(ctx context.Context) ([]GetOnlineUsersRow, erro
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users"
+SELECT id, username, email, is_email_verified, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users"
 WHERE email = $1
 `
 
@@ -171,6 +173,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.IsEmailVerified,
 		&i.PasswordHash,
 		&i.ProfilePictureUrl,
 		&i.IsOnline,
@@ -185,7 +188,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users"
+SELECT id, username, email, is_email_verified, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users"
 WHERE id = $1
 `
 
@@ -196,6 +199,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.IsEmailVerified,
 		&i.PasswordHash,
 		&i.ProfilePictureUrl,
 		&i.IsOnline,
@@ -210,7 +214,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users"
+SELECT id, username, email, is_email_verified, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at FROM "Users"
 WHERE username = $1
 `
 
@@ -221,6 +225,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.IsEmailVerified,
 		&i.PasswordHash,
 		&i.ProfilePictureUrl,
 		&i.IsOnline,
@@ -251,7 +256,7 @@ type SearchUsersByUsernameRow struct {
 	Username          string      `json:"username"`
 	Email             string      `json:"email"`
 	ProfilePictureUrl pgtype.Text `json:"profile_picture_url"`
-	IsOnline          pgtype.Bool `json:"is_online"`
+	IsOnline          bool        `json:"is_online"`
 }
 
 func (q *Queries) SearchUsersByUsername(ctx context.Context, arg SearchUsersByUsernameParams) ([]SearchUsersByUsernameRow, error) {
@@ -293,6 +298,50 @@ func (q *Queries) UnbanUser(ctx context.Context, id int64) error {
 	return err
 }
 
+const updateUser = `-- name: UpdateUser :one
+UPDATE "Users"
+SET
+password_hash = COALESCE($1, password_hash),
+email = COALESCE($2, email),
+is_email_verified = COALESCE($3, is_email_verified)
+WHERE
+username = $4
+RETURNING id, username, email, is_email_verified, password_hash, profile_picture_url, is_online, last_seen_at, role, is_banned, banned_at, banned_reason, created_at
+`
+
+type UpdateUserParams struct {
+	PasswordHash    pgtype.Text `json:"password_hash"`
+	Email           pgtype.Text `json:"email"`
+	IsEmailVerified pgtype.Bool `json:"is_email_verified"`
+	Username        string      `json:"username"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUser,
+		arg.PasswordHash,
+		arg.Email,
+		arg.IsEmailVerified,
+		arg.Username,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.IsEmailVerified,
+		&i.PasswordHash,
+		&i.ProfilePictureUrl,
+		&i.IsOnline,
+		&i.LastSeenAt,
+		&i.Role,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BannedReason,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const updateUserOnlineStatus = `-- name: UpdateUserOnlineStatus :exec
 UPDATE "Users"
 SET is_online = $2,
@@ -301,8 +350,8 @@ WHERE id = $1
 `
 
 type UpdateUserOnlineStatusParams struct {
-	ID       int64       `json:"id"`
-	IsOnline pgtype.Bool `json:"is_online"`
+	ID       int64 `json:"id"`
+	IsOnline bool  `json:"is_online"`
 }
 
 func (q *Queries) UpdateUserOnlineStatus(ctx context.Context, arg UpdateUserOnlineStatusParams) error {

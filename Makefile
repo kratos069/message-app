@@ -55,7 +55,7 @@ client:
 	go run client/cmd/main.go
 
 mock:
-	mockgen -package mockdb -destination db/mock/store.go github.com/message-app/db/sqlc Store
+	mockgen -package mockdb -destination db/mock/store.go github.com/kratos069/message-app/db/sqlc Store
 
 db_docs:
 	dbdocs build doc/db.dbml
@@ -77,6 +77,19 @@ evans:
 	evans --host localhost --port 9090 -r repl
 
 redis:
-	docker run --name redis -p 6379:6379 -d redis:7-alpine
+	docker run --name redis -p 6379:6379 -d redis:8-alpine
 
-.PHONY: test-race migrateupp client new_migration redis evans proto db_schema db_docs postgres createdb dropdb migrateup migratedown sqlc test server mock migrateup1 migratedown1
+app-image:
+	docker build -t message-app:1.0 .
+
+metrics-view-sc:
+	expvarmon -ports="localhost:3010" -vars="build,requests,goroutines,errors,panics,mem:memstats.HeapAlloc,mem:memstats.HeapSys,mem:memstats.Sys"
+
+metrics-view:
+	expvarmon -ports="localhost:4020" -endpoint="/metrics" -vars="build,requests,goroutines,errors,panics,mem:memstats.HeapAlloc,mem:memstats.HeapSys,mem:memstats.Sys"
+	
+talk-metrics:
+	expvarmon -ports="localhost:4000" -vars="build,requests,goroutines,errors,panics,mem:memstats.HeapAlloc,mem:memstats.HeapSys,mem:memstats.Sys"
+
+
+.PHONY: app-image test-race migrateupp client new_migration redis evans proto db_schema db_docs postgres createdb dropdb migrateup migratedown sqlc test server mock migrateup1 migratedown1

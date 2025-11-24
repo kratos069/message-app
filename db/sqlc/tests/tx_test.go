@@ -92,10 +92,10 @@ func TestSendMessageTx(t *testing.T) {
 
 	// Verify conversation timestamp was updated
 	require.NotEmpty(t, result.Conversation.UpdatedAt)
-	require.True(t, result.Conversation.UpdatedAt.Time.After(
-		convResult.Conversation.CreatedAt.Time) ||
-		result.Conversation.UpdatedAt.Time.Equal(
-			convResult.Conversation.CreatedAt.Time))
+	require.True(t, result.Conversation.UpdatedAt.After(
+		convResult.Conversation.CreatedAt) ||
+		result.Conversation.UpdatedAt.Equal(
+			convResult.Conversation.CreatedAt))
 }
 
 // Idempotency → means: If you send the same message twice
@@ -374,7 +374,7 @@ func TestMarkMessagesAsReadTx(t *testing.T) {
 	found := false
 	for _, p := range participants {
 		if p.ID == user2.ID { // p.ID is the user's ID from the JOIN
-			user2LastReadAt = p.LastReadAt
+			user2LastReadAt = pgtype.Timestamp(p.LastReadAt)
 			found = true
 			break
 		}

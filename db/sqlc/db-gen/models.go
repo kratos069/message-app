@@ -12,9 +12,9 @@ import (
 )
 
 type Conversation struct {
-	ConversationsID int64            `json:"conversations_id"`
-	CreatedAt       pgtype.Timestamp `json:"created_at"`
-	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+	ConversationsID int64     `json:"conversations_id"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type ConversationParticipant struct {
@@ -22,8 +22,8 @@ type ConversationParticipant struct {
 	ConversationID             int64 `json:"conversation_id"`
 	UserID                     int64 `json:"user_id"`
 	// For read receipts
-	LastReadAt pgtype.Timestamp `json:"last_read_at"`
-	JoinedAt   pgtype.Timestamp `json:"joined_at"`
+	LastReadAt pgtype.Timestamptz `json:"last_read_at"`
+	JoinedAt   time.Time          `json:"joined_at"`
 }
 
 type Message struct {
@@ -33,8 +33,8 @@ type Message struct {
 	// E2E encrypted message
 	EncryptedContent string `json:"encrypted_content"`
 	// For idempotency/deduplication
-	ClientMessageID string           `json:"client_message_id"`
-	SentAt          pgtype.Timestamp `json:"sent_at"`
+	ClientMessageID string    `json:"client_message_id"`
+	SentAt          time.Time `json:"sent_at"`
 }
 
 type Session struct {
@@ -49,23 +49,34 @@ type Session struct {
 }
 
 type TypingIndicator struct {
-	TypingIndicatorsID int64            `json:"typing_indicators_id"`
-	ConversationID     int64            `json:"conversation_id"`
-	UserID             int64            `json:"user_id"`
-	StartedAt          pgtype.Timestamp `json:"started_at"`
+	TypingIndicatorsID int64     `json:"typing_indicators_id"`
+	ConversationID     int64     `json:"conversation_id"`
+	UserID             int64     `json:"user_id"`
+	StartedAt          time.Time `json:"started_at"`
 }
 
 type User struct {
-	ID                int64            `json:"id"`
-	Username          string           `json:"username"`
-	Email             string           `json:"email"`
-	PasswordHash      string           `json:"password_hash"`
-	ProfilePictureUrl pgtype.Text      `json:"profile_picture_url"`
-	IsOnline          pgtype.Bool      `json:"is_online"`
-	LastSeenAt        pgtype.Timestamp `json:"last_seen_at"`
-	Role              string           `json:"role"`
-	IsBanned          pgtype.Bool      `json:"is_banned"`
-	BannedAt          pgtype.Timestamp `json:"banned_at"`
-	BannedReason      pgtype.Text      `json:"banned_reason"`
-	CreatedAt         pgtype.Timestamp `json:"created_at"`
+	ID                int64              `json:"id"`
+	Username          string             `json:"username"`
+	Email             string             `json:"email"`
+	IsEmailVerified   bool               `json:"is_email_verified"`
+	PasswordHash      string             `json:"password_hash"`
+	ProfilePictureUrl pgtype.Text        `json:"profile_picture_url"`
+	IsOnline          bool               `json:"is_online"`
+	LastSeenAt        pgtype.Timestamptz `json:"last_seen_at"`
+	Role              string             `json:"role"`
+	IsBanned          bool               `json:"is_banned"`
+	BannedAt          pgtype.Timestamptz `json:"banned_at"`
+	BannedReason      pgtype.Text        `json:"banned_reason"`
+	CreatedAt         time.Time          `json:"created_at"`
+}
+
+type VerifyEmail struct {
+	EmailID    int64     `json:"email_id"`
+	Username   string    `json:"username"`
+	Email      string    `json:"email"`
+	SecretCode string    `json:"secret_code"`
+	IsUsed     bool      `json:"is_used"`
+	CreatedAt  time.Time `json:"created_at"`
+	ExpiredAt  time.Time `json:"expired_at"`
 }

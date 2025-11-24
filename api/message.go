@@ -10,7 +10,7 @@ import (
 )
 
 type conversationIDStruct struct {
-	ConversationID int64 `uri:"id" binding:"required,min=1"`
+	ConversationID int64 `uri:"conversation_id" binding:"required,min=1"`
 }
 
 // GetMessages returns messages for a conversation
@@ -77,7 +77,7 @@ func (server *Server) sendMessage(ctx *gin.Context) {
 
 	// Parse conversation ID from URI
 	var uri struct {
-		ConversationID int64 `uri:"id" binding:"required"`
+		ConversationID int64 `uri:"conversation_id" binding:"required"`
 	}
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		ctx.JSON(http.StatusBadRequest,
@@ -125,7 +125,7 @@ func (server *Server) sendMessage(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{
 		"message_id": result.Message.MessagesID,
 		"client_id":  clientMessageID,
-		"sent_at":    result.Message.SentAt.Time,
+		"sent_at":    result.Message.SentAt,
 		"content": gin.H{
 			"conversation_id": result.Message.ConversationID,
 			"sender_id":       result.Message.SenderID,

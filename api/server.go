@@ -1,43 +1,79 @@
 package api
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"runtime"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kratos069/message-app/db/sqlc/db-gen"
 	"github.com/kratos069/message-app/token"
 	"github.com/kratos069/message-app/util"
+	"github.com/kratos069/message-app/worker"
+	"github.com/rs/zerolog/log"
 )
 
-// servers HTTP requests for the insta-app
+// servers HTTP requests
 type Server struct {
-	config     util.Config
-	store      db.Store
-	tokenMaker token.Maker
-	router     *gin.Engine
+	config          util.Config
+	store           db.Store
+	tokenMaker      token.Maker
+	router          *gin.Engine
+	server          *http.Server
+	taskDistributor worker.TaskDistributor
 }
 
 // Creates HTTP server and Setup Routing
-func NewServer(config util.Config, store db.Store) (*Server, error) {
+func NewServer(config util.Config, store db.Store,
+	taskDistributor worker.TaskDistributor) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
 	}
 
+	// ============================Simulation============================
+	// ============================for Production========================
+
+	// Limit CPU usage for realistic production simulation
+	maxProcs := config.MaxProcs
+	if maxProcs == 0 {
+		maxProcs = 4 // Default to 4 cores for production-like testing
+	}
+	runtime.GOMAXPROCS(maxProcs)
+	log.Info().Int("max_procs", maxProcs).Msg("Set CPU limit for production simulation")
+
+	// ============================Simulation============================
+
 	server := &Server{
-		config:     config,
-		store:      store,
-		tokenMaker: tokenMaker,
+		config:          config,
+		store:           store,
+		tokenMaker:      tokenMaker,
+		taskDistributor: taskDistributor,
 	}
 
 	// Routes
 	server.setupRoutes()
+
+	// HTTP server with timeouts
+	server.server = &http.Server{
+		Addr:           config.HTTPServerAddress,
+		Handler:        server.router,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		IdleTimeout:    120 * time.Second,
+		MaxHeaderBytes: 1 << 20, // 1 MB
+	}
 
 	return server, nil
 }
 
 func (server *Server) setupRoutes() {
 	router := gin.Default()
+
+	// Track active requests
+	router.Use(ActiveRequestsMiddleware())
 
 	// Health check endpoint
 	router.GET("/health", func(ctx *gin.Context) {
@@ -48,10 +84,14 @@ func (server *Server) setupRoutes() {
 	})
 
 	// routes
+
+	// public
 	router.POST("/register", server.register)
 	router.POST("/login", server.loginUser)
 
-	// router.POST("/tokens/renew_access", server.renewAccessToken)
+	// Email verification (public - accessed via email link)
+	router.GET("/verify_email", server.VerifyEmail)
+	router.POST("/resend_verification", server.ResendVerificationEmail)
 
 	// for both users and admins
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker,
@@ -67,8 +107,8 @@ func (server *Server) setupRoutes() {
 	authRoutes.GET("/conversations/:id", server.getConversation)
 	authRoutes.GET("/debug/:conversation_id", server.debugConversation)
 
-	authRoutes.GET("/messages/:id", server.getMessages)
-	authRoutes.POST("/messages/:id", server.sendMessage)
+	authRoutes.GET("/messages/:conversation_id", server.getMessages)
+	authRoutes.POST("/messages/:conversation_id", server.sendMessage)
 
 	// for only admins
 	adminRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker,
@@ -80,12 +120,25 @@ func (server *Server) setupRoutes() {
 	adminRoutes.GET("/admin/stats", server.getStats)
 
 	server.router = router
-
 }
 
 // Starts and runs HTTP server on a specific address
 func (server *Server) Start(address string) error {
-	return server.router.Run(address)
+	server.server.Addr = address
+	return server.server.ListenAndServe()
+}
+
+// Shutdown gracefully shuts down the server
+func (server *Server) Shutdown(ctx context.Context) error {
+	log.Info().Msg("Initiating graceful shutdown...")
+
+	// Set the server to not accept new connections
+	if err := server.server.Shutdown(ctx); err != nil {
+		return fmt.Errorf("server shutdown failed: %w", err)
+	}
+
+	log.Info().Msg("All active connections closed")
+	return nil
 }
 
 func errResponse(err error) gin.H {

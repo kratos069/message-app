@@ -21,6 +21,10 @@ type Store interface {
 		GetOrCreateDirectConversationTxResult, error)
 	MarkMessagesAsReadTx(
 		ctx context.Context, arg MarkMessagesAsReadTxParams) error
+	CreateUserTx(ctx context.Context,
+		arg CreateUserTxParams) (CreateUserTxResults, error)
+	VerifyEmailTx(ctx context.Context,
+		arg VerifyEmailTxParams) (VerifyEmailTxResults, error)
 }
 
 // SQLStore provides all funcs for SQL queries and transactions

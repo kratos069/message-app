@@ -3,15 +3,18 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/kratos069/message-app/db/sqlc/db-gen"
 	"github.com/kratos069/message-app/token"
 	"github.com/kratos069/message-app/util"
+	"github.com/kratos069/message-app/worker"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -36,6 +39,7 @@ func newUserResponse(user db.User) userResponse {
 		UserID:   user.ID,
 		Username: user.Username,
 		Email:    user.Email,
+		Role:     user.Role,
 	}
 }
 
@@ -53,20 +57,45 @@ func (server *Server) register(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errResponse(err))
 		return
 	}
-	// Create user
-	user, err := server.store.CreateUser(ctx, db.CreateUserParams{
-		Username:     req.Username,
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		Role:         req.Role,
+
+	// Create user & sending verification email in one DB transaction
+	txResult, err := server.store.CreateUserTx(ctx, db.CreateUserTxParams{
+		CreateUserParams: db.CreateUserParams{
+			Username:     req.Username,
+			Email:        req.Email,
+			PasswordHash: string(hashedPassword),
+			Role:         req.Role,
+		},
+		AfterCreate: func(user db.User) error {
+			// send verification email -> that user created
+			taskPayload := &worker.PayloadSendVerifyEmail{
+				Username: user.Username,
+			}
+
+			opts := []asynq.Option{
+				asynq.MaxRetry(10),
+				asynq.ProcessIn(7 * time.Second),
+				asynq.Queue(worker.QueueCritical),
+			}
+
+			return server.taskDistributor.DistributeTaskSendBerifyEmail(ctx, taskPayload, opts...)
+		},
 	})
 
 	if err != nil {
+		// Check if it's a duplicate key error
+		if isDuplicateKeyError(err) {
+			ctx.JSON(http.StatusConflict, gin.H{
+				"error": "Username or email already exists",
+			})
+			return
+		}
+
 		ctx.JSON(http.StatusInternalServerError, errResponse(err))
 		return
 	}
 
-	resp := newUserResponse(user)
+	resp := newUserResponse(txResult.User)
 	ctx.JSON(http.StatusOK, resp)
 }
 
@@ -150,11 +179,8 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 	// Update online status
 	_ = server.store.UpdateUserOnlineStatus(ctx, db.UpdateUserOnlineStatusParams{
-		ID: user.ID,
-		IsOnline: pgtype.Bool{
-			Bool:  true,
-			Valid: true,
-		},
+		ID:       user.ID,
+		IsOnline: true,
 	})
 
 	resp := loginUserResponse{
@@ -183,11 +209,8 @@ func (server *Server) logoutUser(ctx *gin.Context) {
 
 	// Update user online status to offline
 	err = server.store.UpdateUserOnlineStatus(ctx, db.UpdateUserOnlineStatusParams{
-		ID: authPayload.UserID,
-		IsOnline: pgtype.Bool{
-			Bool:  false,
-			Valid: true,
-		},
+		ID:       authPayload.UserID,
+		IsOnline: false,
 	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errResponse(err))
@@ -251,4 +274,27 @@ func (server *Server) SearchUsers(ctx *gin.Context) {
 		"count":   len(users),
 		"message": "Search completed successfully",
 	})
+}
+
+// ==========================================================================
+// ================================Helper====================================
+// ==========================================================================
+
+// IsDuplicateKeyError checks if error is a unique constraint violation
+func isDuplicateKeyError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		// PostgreSQL error code 23505 is unique_violation
+		return pgErr.Code == "23505"
+	}
+
+	// Fallback: check error message
+	errMsg := err.Error()
+	return strings.Contains(errMsg, "duplicate key") ||
+		strings.Contains(errMsg, "unique constraint") ||
+		strings.Contains(errMsg, "SQLSTATE 23505")
 }

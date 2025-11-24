@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kratos069/message-app/token"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -72,4 +74,29 @@ func hasPermissions(userRole string, accessibleRoles []string) bool {
 		}
 	}
 	return false
+}
+
+var (
+	activeRequests int64
+)
+
+// ActiveRequestsMiddleware tracks number of active requests
+func ActiveRequestsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Increment active requests
+		count := atomic.AddInt64(&activeRequests, 1)
+		log.Debug().Int64("active_requests", count).Msg("Request started")
+
+		// Process request
+		c.Next()
+
+		// Decrement active requests
+		count = atomic.AddInt64(&activeRequests, -1)
+		log.Debug().Int64("active_requests", count).Msg("Request completed")
+	}
+}
+
+// GetActiveRequests returns the current number of active requests
+func GetActiveRequests() int64 {
+	return atomic.LoadInt64(&activeRequests)
 }

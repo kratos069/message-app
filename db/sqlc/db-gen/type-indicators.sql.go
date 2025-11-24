@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -34,10 +35,10 @@ WHERE ti.conversation_id = $1
 `
 
 type GetTypingUsersRow struct {
-	ID                int64            `json:"id"`
-	Username          string           `json:"username"`
-	ProfilePictureUrl pgtype.Text      `json:"profile_picture_url"`
-	StartedAt         pgtype.Timestamp `json:"started_at"`
+	ID                int64       `json:"id"`
+	Username          string      `json:"username"`
+	ProfilePictureUrl pgtype.Text `json:"profile_picture_url"`
+	StartedAt         time.Time   `json:"started_at"`
 }
 
 func (q *Queries) GetTypingUsers(ctx context.Context, conversationID int64) ([]GetTypingUsersRow, error) {

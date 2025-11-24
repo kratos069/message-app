@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -54,13 +55,13 @@ WHERE cp.conversation_id = $1
 `
 
 type GetConversationParticipantsRow struct {
-	ID                int64            `json:"id"`
-	Username          string           `json:"username"`
-	Email             string           `json:"email"`
-	ProfilePictureUrl pgtype.Text      `json:"profile_picture_url"`
-	IsOnline          pgtype.Bool      `json:"is_online"`
-	LastReadAt        pgtype.Timestamp `json:"last_read_at"`
-	JoinedAt          pgtype.Timestamp `json:"joined_at"`
+	ID                int64              `json:"id"`
+	Username          string             `json:"username"`
+	Email             string             `json:"email"`
+	ProfilePictureUrl pgtype.Text        `json:"profile_picture_url"`
+	IsOnline          bool               `json:"is_online"`
+	LastReadAt        pgtype.Timestamptz `json:"last_read_at"`
+	JoinedAt          time.Time          `json:"joined_at"`
 }
 
 func (q *Queries) GetConversationParticipants(ctx context.Context, conversationID int64) ([]GetConversationParticipantsRow, error) {

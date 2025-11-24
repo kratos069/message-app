@@ -24,6 +24,8 @@ type Config struct {
 	EmailSenderName      string        `mapstructure:"EMAIL_SENDER_NAME"`
 	EmailSenderAddress   string        `mapstructure:"EMAIL_SENDER_ADDRESS"`
 	EmailSenderPassword  string        `mapstructure:"EMAIL_SENDER_PASSWORD"`
+	DebugHost            string        `mapstructure:"DEBUG_HOST"`
+	MaxProcs             int           `mapstructure:"MAX_PROCS"`
 }
 
 // loads configuration from file or environment variables

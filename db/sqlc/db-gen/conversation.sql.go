@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -107,15 +108,15 @@ WHERE c.conversations_id = $1
 `
 
 type GetConversationWithParticipantsRow struct {
-	ConversationsID     int64            `json:"conversations_id"`
-	CreatedAt           pgtype.Timestamp `json:"created_at"`
-	UpdatedAt           pgtype.Timestamp `json:"updated_at"`
-	ParticipantID       int64            `json:"participant_id"`
-	ParticipantUsername string           `json:"participant_username"`
-	ParticipantAvatar   pgtype.Text      `json:"participant_avatar"`
-	ParticipantOnline   pgtype.Bool      `json:"participant_online"`
-	LastReadAt          pgtype.Timestamp `json:"last_read_at"`
-	JoinedAt            pgtype.Timestamp `json:"joined_at"`
+	ConversationsID     int64              `json:"conversations_id"`
+	CreatedAt           time.Time          `json:"created_at"`
+	UpdatedAt           time.Time          `json:"updated_at"`
+	ParticipantID       int64              `json:"participant_id"`
+	ParticipantUsername string             `json:"participant_username"`
+	ParticipantAvatar   pgtype.Text        `json:"participant_avatar"`
+	ParticipantOnline   bool               `json:"participant_online"`
+	LastReadAt          pgtype.Timestamptz `json:"last_read_at"`
+	JoinedAt            time.Time          `json:"joined_at"`
 }
 
 func (q *Queries) GetConversationWithParticipants(ctx context.Context, conversationsID int64) ([]GetConversationWithParticipantsRow, error) {
@@ -170,10 +171,10 @@ type GetUserConversationsParams struct {
 }
 
 type GetUserConversationsRow struct {
-	ConversationsID int64            `json:"conversations_id"`
-	CreatedAt       pgtype.Timestamp `json:"created_at"`
-	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
-	UnreadCount     int64            `json:"unread_count"`
+	ConversationsID int64     `json:"conversations_id"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	UnreadCount     int64     `json:"unread_count"`
 }
 
 func (q *Queries) GetUserConversations(ctx context.Context, arg GetUserConversationsParams) ([]GetUserConversationsRow, error) {

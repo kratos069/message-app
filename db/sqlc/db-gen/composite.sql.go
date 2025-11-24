@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -109,17 +110,17 @@ type GetUserConversationsWithLastMessageParams struct {
 }
 
 type GetUserConversationsWithLastMessageRow struct {
-	ConversationsID     int64            `json:"conversations_id"`
-	UpdatedAt           pgtype.Timestamp `json:"updated_at"`
-	OtherUserID         int64            `json:"other_user_id"`
-	OtherUserUsername   string           `json:"other_user_username"`
-	OtherUserAvatar     pgtype.Text      `json:"other_user_avatar"`
-	OtherUserOnline     pgtype.Bool      `json:"other_user_online"`
-	OtherUserLastSeen   pgtype.Timestamp `json:"other_user_last_seen"`
-	LastMessageContent  string           `json:"last_message_content"`
-	LastMessageTime     pgtype.Timestamp `json:"last_message_time"`
-	LastMessageSenderID int64            `json:"last_message_sender_id"`
-	UnreadCount         int64            `json:"unread_count"`
+	ConversationsID     int64              `json:"conversations_id"`
+	UpdatedAt           time.Time          `json:"updated_at"`
+	OtherUserID         int64              `json:"other_user_id"`
+	OtherUserUsername   string             `json:"other_user_username"`
+	OtherUserAvatar     pgtype.Text        `json:"other_user_avatar"`
+	OtherUserOnline     bool               `json:"other_user_online"`
+	OtherUserLastSeen   pgtype.Timestamptz `json:"other_user_last_seen"`
+	LastMessageContent  string             `json:"last_message_content"`
+	LastMessageTime     time.Time          `json:"last_message_time"`
+	LastMessageSenderID int64              `json:"last_message_sender_id"`
+	UnreadCount         int64              `json:"unread_count"`
 }
 
 func (q *Queries) GetUserConversationsWithLastMessage(ctx context.Context, arg GetUserConversationsWithLastMessageParams) ([]GetUserConversationsWithLastMessageRow, error) {
